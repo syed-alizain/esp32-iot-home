@@ -16,3 +16,15 @@ To set the duty cycle (50 - 255)
 `GET /temperature0`
 `GET /humidity0`
 
+# Buzzer (Delay range 1 - 5000)
+
+`GET /buzzer?delay=200`
+
+# Light sensor
+
+ GET /ldr
+
+# OUTPUTS for Relays (1 to 16)
+
+ GET /relay1=on
+ GET /relay1=off

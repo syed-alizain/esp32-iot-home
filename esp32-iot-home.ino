@@ -3,7 +3,15 @@
 #include <WebServer.h>
 #include <ESPmDNS.h>
 #include "DHT.h"        // DHT11 temperature and humidity sensor Predefined library
+#include "Wire.h"
+#include "PCF8575.h"
+
 #include "config.h"
+
+#define SDA_PIN 21  // Change if using different pins
+#define SCL_PIN 22  // Change if using different pins
+
+PCF8575 pcf8575(0x20, &Wire);  // Corrected constructor
 
 void sendTemp0() {
     server.send(200, "text/plain", getTemp0());
@@ -25,7 +33,9 @@ void restServerRouting() {
     server.on("/temperature0", HTTP_GET, sendTemp0);
     server.on("/temperature1", HTTP_GET, sendTemp1);
     server.on("/humidity0", HTTP_GET, sendHumidity0);
-    server.on("/relay", HTTP_GET, handleRelays);
+    //server.on("/relay", HTTP_GET, handleRelays);
+    server.on("/buzzer", HTTP_GET, handleBuzzer);
+    server.on("/ldr", handleLDR);
 }
 
 // Manage not found URL
@@ -48,19 +58,23 @@ void setup() {
     dht.begin();
     Serial.begin(115200);
 
-    fanControl();
+    Wire.begin(SDA_PIN, SCL_PIN);  // Initialize I2C manually
+    pcf8575.begin();
+
+    // Set buzzer pin as an output
+    pinMode(buzzerPin, OUTPUT);
 
     pinMode(LED_BUILTIN, OUTPUT);
 
-    pinMode(relayone, OUTPUT);
-    pinMode(relaytwo, OUTPUT);
-    pinMode(relaythree, OUTPUT);
-    pinMode(relayfour, OUTPUT);
+//    pinMode(relayone, OUTPUT);
+//    pinMode(relaytwo, OUTPUT);
+//    pinMode(relaythree, OUTPUT);
+//    pinMode(relayfour, OUTPUT);
 
-    digitalWrite(relayone, HIGH);
-    digitalWrite(relaytwo, HIGH);
-    digitalWrite(relaythree, HIGH);
-    digitalWrite(relayfour, HIGH);
+//    digitalWrite(relayone, HIGH);
+//    digitalWrite(relaytwo, HIGH);
+//    digitalWrite(relaythree, HIGH);
+//    digitalWrite(relayfour, HIGH);
 
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
@@ -87,8 +101,15 @@ void setup() {
     restServerRouting();
     // Set not found response
     server.onNotFound(handleNotFound);
+
+    fanControl();
+
+    // Handle API requests
+    server.onNotFound(handleRelayControl);
+
     // Start server
     server.begin();
+    buzzer(100);
     Serial.println("HTTP server started");
 }
 
@@ -130,6 +151,7 @@ String getHumidity0() {
     return String(h);
 }
 
+/*
 void handleRelays() {
     handleLEDStatus();
     String action = server.arg("action");
@@ -161,21 +183,7 @@ int relayNumber(int relayNum) {
         return -1;
     }
 }
-
-// Function to handle LED blinking
-void handleLEDStatus() {
-  unsigned long currentMillis = millis();
-
-  // Check if it's time to toggle the LED
-  if (currentMillis - previousMillis >= interval) {
-    previousMillis = currentMillis;
-
-    // Toggle the LED state
-    int ledState = digitalRead(LED_BUILTIN);
-    digitalWrite(LED_BUILTIN, !ledState);
-  }
-}
-
+*/
 void loop() {
     server.handleClient();
     digitalWrite(LED_BUILTIN, 0);
